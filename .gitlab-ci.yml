@@ -3,7 +3,8 @@ variables:
   INFRA_PROJECT_PATH: mak/diploma
   INFRA_CNT_IMAGE: "${CI_REGISTRY}/${INFRA_PROJECT_PATH}/infra-container"
 build-infra-image:
-  image: $INFRA_CNT_IMAGE
+  #image: $INFRA_CNT_IMAGE
+  image: docker:stable
   stage: build
   services:
     - docker:dind
