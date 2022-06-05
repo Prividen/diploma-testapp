@@ -5,8 +5,8 @@ variables:
 build-infra-image:
   image: $INFRA_CNT_IMAGE
   stage: build
-#  services:
-#    - docker:dind
+  services:
+    - docker:dind
 #  before_script:
 #    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
   script:
@@ -19,8 +19,3 @@ build-infra-image:
 #      when: never
 #    - when: never
 #
-  needs:
-    - project: $INFRA_PROJECT_PATH
-      job: ansible-deploy
-      ref: master
-      artifacts: true
