@@ -1,0 +1,75 @@
+---
+- name: Deploy testapp
+  hosts: all
+  become: false
+  run_once: true
+
+  vars:
+    qbec_yaml:
+      apiVersion: qbec.io/v1alpha1
+      kind: App
+      metadata:
+        name: testapp
+      spec:
+        environments:
+          stage:
+            defaultNamespace: testapp-stage
+            server: "{{ k8s_cluster_url }}"
+          prod:
+            defaultNamespace: testapp-prod
+            server: "{{ k8s_cluster_url }}"
+        vars:
+          external:
+            - name: registry
+              default: "{{ container_registry }}"
+            - name: image_tag
+              default: latest
+            - name: pic_url
+              default: "{{ picture_url }}"
+            - name: registry_auth
+              # fake auth data (base64-encoded)
+              default: eyJhdXRocyI6IG51bGx9
+              secret: true
+
+  tasks:
+    # set docker part
+    - name: Deploy testapp
+      delegate_to: localhost
+      environment:
+        KUBECONFIG: "{{ playbook_dir }}/../admin-{{ cluster_name }}.conf"
+      block:
+        - name: Import KUBECONF file
+          ansible.builtin.set_fact:
+            kubeconf: "{{ lookup('file', '../admin-' + cluster_name + '.conf') | from_json }}"
+
+        - name: Set K8s cluster access URL
+          ansible.builtin.set_fact:
+            k8s_cluster_url: "{{ kubeconf.clusters[0].cluster.server }}"
+
+        - name: Create qbec.yaml config
+          ansible.builtin.copy:
+            dest: ../testapp/qbec/qbec.yaml
+            content: "{{ qbec_yaml | to_yaml }}"
+            mode: 0644
+
+        - name: Set auth payload (k8s_registry_agent SA)
+          ansible.builtin.set_fact:
+            auth_payload: "json_key:{{ k8s_registry_agent_key | to_nice_json }}"
+
+        - name: Set dockerconfigjson secret (k8s_registry_agent SA)
+          ansible.builtin.set_fact:
+            dockerconfigjson:
+              auths:
+                cr.yandex:
+                  auth: "{{ auth_payload | b64encode }}"
+
+        - name: "Run qbec to deploy testapp in '{{ deploy_env }}' environment"
+          ansible.builtin.command: "qbec apply {{ deploy_env }} --vm:ext-str registry_auth --yes"
+          args:
+            chdir: ../testapp/qbec
+          environment:
+            registry_auth: "{{ dockerconfigjson | to_json | b64encode }}"
+          register: qbec_output
+          changed_when: qbec_output.stdout | regex_search(' (created|updated|deleted):')
+
+    # check app result
