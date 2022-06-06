@@ -91,7 +91,7 @@ deploy-testapp:
   before_script: *before_script
   script:
     - sudo bash -c "echo '51.250.64.214        kube-cluster.yc.complife.ru' >> /etc/hosts"
-    - ansible-playbook -e @infra-info.yaml prepare.yaml validate.yaml
+    - ansible-playbook -e @infra-info.yaml prepare.yaml deploy.yaml
 
 
 
