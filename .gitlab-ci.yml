@@ -17,9 +17,10 @@ build-docker-image:
     - unzip .artifacts.zip && rm -f .artifacts.zip
     - chmod 0600 admin-*.conf infra-info.yaml
     - export CONTAINER_REGISTRY=$(grep container_registry infra-info.yaml |cut -f2 -d' ')
-    - export DOCKER_REGISTRY_KEY=$(grep docker_registry_agent_key infra-info.yaml |cut -f2 -d' ' |base64 -d)
+    - export DOCKER_REGISTRY_KEY=$(grep docker_registry_agent_key infra-info.yaml |cut -f2 -d' ' |base64 -d | tr "'" '"')
   script:
-    - echo $DOCKER_REGISTRY_KEY |docker login -u json_key --password-stdin cr.yandex
+    - echo "$DOCKER_REGISTRY_KEY"
+    - echo "$DOCKER_REGISTRY_KEY" |docker login -u json_key --password-stdin cr.yandex
     - cd ${APP_NAME}/docker
     - docker build --pull -t ${CONTAINER_REGISTRY}/${APP_NAME}:latest ./
     - docker push ${CONTAINER_REGISTRY}/${APP_NAME}:latest
