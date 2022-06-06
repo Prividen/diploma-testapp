@@ -10,7 +10,6 @@ stages:
   - deploy
 
 build-docker-image:
-  #image: $INFRA_CNT_IMAGE
   image: docker:stable
   stage: build
   services:
@@ -24,27 +23,48 @@ build-docker-image:
     - export CONTAINER_REGISTRY=$(grep container_registry infra-info.yaml |cut -f2 -d' ')
     - export DOCKER_REGISTRY_KEY=$(grep docker_registry_agent_key infra-info.yaml |cut -f2 -d' ' |base64 -d | tr "'" '"')
   script:
-    - echo "$DOCKER_REGISTRY_KEY"
-    - echo "$DOCKER_REGISTRY_KEY" |docker login -u json_key --password-stdin cr.yandex
     - cd ${APP_NAME}/docker
     - docker build --pull -t ${CONTAINER_REGISTRY}/${APP_NAME}:latest ./
-    - docker push ${CONTAINER_REGISTRY}/${APP_NAME}:latest
     - |
       if [ -n "$CI_COMMIT_TAG" ]; then
         for TAG in ${CI_COMMIT_TAG} stable; do
           docker tag ${CONTAINER_REGISTRY}/${APP_NAME}:latest ${CONTAINER_REGISTRY}/${APP_NAME}:${TAG}
-          docker push ${CONTAINER_REGISTRY}/${APP_NAME}:${TAG}
         done
       fi
 
 test-docker-image:
-  #image: $INFRA_CNT_IMAGE
   image: docker:stable
   stage: test
   services:
     - docker:dind
+  before_script: *before_script
   script:
-    - sleep 1h || true
+    - docker run --name test_build --rm -d -p 18080:80 ${CONTAINER_REGISTRY}/${APP_NAME}:latest
+    - sleep 5s
+    - wget -q docker:18080 -O - |grep 'Default index'
+  after_script:
+    - docker kill test_build
+  dependencies:
+    - build-docker-image
+
+push-docker-image:
+  image: docker:stable
+  stage: deploy
+  services:
+    - docker:dind
+  before_script: *before_script
+  script:
+    - echo "$DOCKER_REGISTRY_KEY" |docker login -u json_key --password-stdin cr.yandex
+    - docker push ${CONTAINER_REGISTRY}/${APP_NAME}:latest
+    - |
+      if [ -n "$CI_COMMIT_TAG" ]; then
+        for TAG in ${CI_COMMIT_TAG} stable; do
+          docker push ${CONTAINER_REGISTRY}/${APP_NAME}:${TAG}
+        done
+      fi
+
+
+
 
 
 #  rules:
