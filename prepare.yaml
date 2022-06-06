@@ -63,6 +63,6 @@
                 cr.yandex:
                   auth: "{{ auth_payload | b64encode }}"
 
-        - name: debug
-          debug:
-            var: image_tags_map[deploy_env]
+        - name: Set image tags map
+          ansible.builtin.set_fact:
+            image_tags_map: image_tags_map
