@@ -86,9 +86,6 @@ push-docker-image:
   dependencies:
     - build-docker-image
     - test-docker-image
-  rules:
-    - when: never
-
 
 
 deploy-testapp:
@@ -98,9 +95,6 @@ deploy-testapp:
   script:
     - sudo bash -c "echo '$(dig +short kube-cluster.yc.complife.ru @8.8.8.8)    kube-cluster.yc.complife.ru' >> /etc/hosts"
     - ansible-playbook -e @infra-info.yaml prepare.yaml deploy.yaml
-  rules:
-    - when: never
-
 
 
 #  rules:
