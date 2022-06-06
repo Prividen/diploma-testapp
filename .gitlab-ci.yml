@@ -13,7 +13,7 @@ build-docker-image:
   before_script: &before_script
     - INFRA_PROJECT_API="${CI_API_V4_URL}/projects/$(echo $INFRA_PROJECT_PATH |sed -e 's|/|%2F|g')/jobs/artifacts/master/download"
     - echo $INFRA_PROJECT_API
-    - wget -s --header "JOB-TOKEN:$CI_JOB_TOKEN" ${INFRA_PROJECT_API}?job=${INFRA_ARTIFACT_SOURCE_JOB} -O .artifacts.zip
+    - wget --header "JOB-TOKEN:$CI_JOB_TOKEN" ${INFRA_PROJECT_API}?job=${INFRA_ARTIFACT_SOURCE_JOB} -O .artifacts.zip
     - unzip .artifacts.zip && rm -f .artifacts.zip
     - chmod 0600 admin-*.conf infra-info.yaml
     - export CONTAINER_REGISTRY=$(grep container_registry infra-info.yaml |cut -f2 -d' ')
