@@ -1,17 +1,37 @@
 variables:
-  #CI_PROJECT_PATH
   INFRA_PROJECT_PATH: mak/diploma
+  INFRA_ARTIFACT_SOURCE_JOB: cluster-deploy
   INFRA_CNT_IMAGE: "${CI_REGISTRY}/${INFRA_PROJECT_PATH}/infra-container"
-build-infra-image:
+  APP_NAME: testapp
+
+build-docker-image:
   #image: $INFRA_CNT_IMAGE
   image: docker:stable
   stage: build
   services:
     - docker:dind
-#  before_script:
-#    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+  before_script: &before_script
+    - INFRA_PROJECT_API="${CI_API_V4_URL}/projects/$(echo $INFRA_PROJECT_PATH |sed -e 's|/|%2F|g')/jobs/artifacts/master/download"
+    - echo $INFRA_PROJECT_API
+    - wget -s --header "JOB-TOKEN:$CI_JOB_TOKEN" ${INFRA_PROJECT_API}?job=${INFRA_ARTIFACT_SOURCE_JOB} -O .artifacts.zip
+    - unzip .artifacts.zip && rm -f .artifacts.zip
+    - chmod 0600 admin-*.conf infra-info.yaml
+    - export CONTAINER_REGISTRY=$(grep container_registry infra-info.yaml |cut -f2 -d' ')
+    - export DOCKER_REGISTRY_KEY=$(grep docker_registry_agent_key infra-info.yaml |cut -f2 -d' ' |base64 -d)
   script:
     - sleep 1h || true
+    - echo DOCKER_REGISTRY_KEY |docker login -u json_key --password-stdin cr.yandex
+    - cd ${APP_NAME}/docker
+    - docker build --pull -t ${CONTAINER_REGISTRY}/${APP_NAME}:latest ./
+    - docker push ${CONTAINER_REGISTRY}/${APP_NAME}:latest
+    - |
+      if [ -n "$CI_COMMIT_TAG" ]; then
+        for TAG in ${CI_COMMIT_TAG} stable; do
+          docker tag ${CONTAINER_REGISTRY}/${APP_NAME}:latest ${CONTAINER_REGISTRY}/${APP_NAME}:${TAG}
+          docker push ${CONTAINER_REGISTRY}/${APP_NAME}:${TAG}
+        done
+      fi
+
 #  rules:
 #    - changes:
 #        - infra-container/*
