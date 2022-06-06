@@ -4,6 +4,11 @@ variables:
   INFRA_CNT_IMAGE: "${CI_REGISTRY}/${INFRA_PROJECT_PATH}/infra-container"
   APP_NAME: testapp
 
+stages:
+  - build
+  - test
+  - deploy
+
 build-docker-image:
   #image: $INFRA_CNT_IMAGE
   image: docker:stable
@@ -31,6 +36,16 @@ build-docker-image:
           docker push ${CONTAINER_REGISTRY}/${APP_NAME}:${TAG}
         done
       fi
+
+test-docker-image:
+  #image: $INFRA_CNT_IMAGE
+  image: docker:stable
+  stage: test
+  services:
+    - docker:dind
+  script:
+    - sleep 1h || true
+
 
 #  rules:
 #    - changes:
