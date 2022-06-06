@@ -43,7 +43,6 @@ build-docker-image:
         done
       fi
   rules:
-    - when: never
     - if: $CI_PIPELINE_SOURCE == 'pipeline'
       when: never
     - when: on_success
@@ -63,7 +62,6 @@ test-docker-image:
   dependencies:
     - build-docker-image
   rules:
-    - when: never
     - if: $CI_PIPELINE_SOURCE == 'pipeline'
       when: never
     - when: on_success
