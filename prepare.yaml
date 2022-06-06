@@ -65,4 +65,4 @@
 
         - name: Set image tags map
           ansible.builtin.set_fact:
-            image_tags_map: image_tags_map
+            image_tags_map: "{{ image_tags_map }}"
