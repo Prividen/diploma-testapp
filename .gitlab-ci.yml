@@ -20,8 +20,9 @@ build-docker-image:
     - wget --header "JOB-TOKEN:$CI_JOB_TOKEN" ${INFRA_PROJECT_API}?job=${INFRA_ARTIFACT_SOURCE_JOB} -O .artifacts.zip
     - unzip .artifacts.zip && rm -f .artifacts.zip
     - chmod 0600 admin-*.conf infra-info.yaml
-    - export CONTAINER_REGISTRY=$(grep container_registry infra-info.yaml |cut -f2 -d' ')
-    - export DOCKER_REGISTRY_KEY=$(grep docker_registry_agent_key infra-info.yaml |cut -f2 -d' ' |base64 -d | tr "'" '"')
+    - export CONTAINER_REGISTRY=$(grep '^container_registry:' infra-info.yaml |cut -f2 -d' ')
+    - export DOCKER_REGISTRY_KEY=$(grep '^docker_registry_agent_key:' infra-info.yaml |cut -f2 -d' ' |base64 -d | tr "'" '"')
+    - export DEPLOY_ENV=$(grep '^deploy_env:' infra-info.yaml |cut -f2 -d' ')
   script:
     - cd ${APP_NAME}/docker
     - docker build --pull -t ${CONTAINER_REGISTRY}/${APP_NAME}:latest ./
@@ -31,6 +32,9 @@ build-docker-image:
           docker tag ${CONTAINER_REGISTRY}/${APP_NAME}:latest ${CONTAINER_REGISTRY}/${APP_NAME}:${TAG}
         done
       fi
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'pipeline'
+      when: never
 
 test-docker-image:
   image: docker:stable
@@ -46,6 +50,9 @@ test-docker-image:
     - docker kill test_build
   dependencies:
     - build-docker-image
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'pipeline'
+      when: never
 
 push-docker-image:
   image: docker:stable
@@ -61,7 +68,12 @@ push-docker-image:
         for TAG in ${CI_COMMIT_TAG} stable; do
           docker push ${CONTAINER_REGISTRY}/${APP_NAME}:${TAG}
         done
+      elsif [ "$CI_PIPELINE_SOURCE" = "pipeline" -a "$DEPLOY_ENV" = "prod" ]; then
+          docker push ${CONTAINER_REGISTRY}/${APP_NAME}:stable
       fi
+  dependencies:
+    - build-docker-image
+    - test-docker-image
 
 
 
