@@ -63,7 +63,7 @@ validate-testapp-env:
   stage: test
   before_script: *before_script
   script:
-    - sudo bash -c "echo '51.250.64.214        kube-cluster.yc.complife.ru' >> /etc/hosts"
+    - sudo bash -c "echo '$(dig +short kube-cluster.yc.complife.ru @8.8.8.8)  kube-cluster.yc.complife.ru' >> /etc/hosts"
     - ansible-playbook -e @infra-info.yaml prepare.yaml validate.yaml
 
 push-docker-image:
@@ -94,7 +94,7 @@ deploy-testapp:
   image: $INFRA_CNT_IMAGE
   before_script: *before_script
   script:
-    - sudo bash -c "echo '51.250.64.214        kube-cluster.yc.complife.ru' >> /etc/hosts"
+    - sudo bash -c "echo '$(dig +short kube-cluster.yc.complife.ru @8.8.8.8)    kube-cluster.yc.complife.ru' >> /etc/hosts"
     - ansible-playbook -e @infra-info.yaml prepare.yaml deploy.yaml
 
 
