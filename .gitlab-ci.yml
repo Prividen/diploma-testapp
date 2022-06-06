@@ -21,7 +21,7 @@ build-docker-image:
     - unzip .artifacts.zip && rm -f .artifacts.zip
     - chmod 0600 admin-*.conf infra-info.yaml
     - export CONTAINER_REGISTRY=$(grep '^container_registry:' infra-info.yaml |cut -f2 -d' ')
-    - export DOCKER_REGISTRY_KEY=$(grep '^docker_registry_agent_key:' infra-info.yaml |cut -f2 -d' ' |base64 -d | tr "'" '"')
+    - export DOCKER_REGISTRY_KEY=$(grep '^docker_registry_agent_key:' infra-info.yaml |cut -f2 -d' ' |base64 -d)
     - export DEPLOY_ENV=$(grep '^deploy_env:' infra-info.yaml |cut -f2 -d' ')
   script:
     - cd ${APP_NAME}/docker
@@ -86,8 +86,7 @@ push-docker-image:
   dependencies:
     - build-docker-image
     - test-docker-image
-  rules:
-    - when: never
+
 
 
 deploy-testapp:

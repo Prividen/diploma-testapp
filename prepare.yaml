@@ -54,7 +54,7 @@
 
         - name: Set auth payload (k8s_registry_agent SA)
           ansible.builtin.set_fact:
-            auth_payload: "json_key:{{ docker_registry_agent_key | to_nice_json }}"
+            auth_payload: "json_key:{{ k8s_registry_agent_key | to_nice_json }}"
 
         - name: Set dockerconfigjson secret (k8s_registry_agent SA)
           ansible.builtin.set_fact:
