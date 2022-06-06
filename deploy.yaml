@@ -1,0 +1,16 @@
+---
+- name: Deploy testapp
+  hosts: all
+  become: false
+  run_once: true
+  tasks:
+    - name: "Run qbec to deploy testapp in '{{ deploy_env }}' environment"
+      delegate_to: localhost
+      ansible.builtin.command: "qbec apply {{ deploy_env }} --vm:ext-str registry_auth --yes"
+      args:
+        chdir: testapp/qbec
+      environment:
+        registry_auth: "{{ dockerconfigjson | to_json | b64encode }}"
+        KUBECONFIG: "{{ playbook_dir }}/admin-{{ cluster_name }}.conf"
+      register: qbec_output
+      changed_when: qbec_output.stdout | regex_search(' (created|updated|deleted):')

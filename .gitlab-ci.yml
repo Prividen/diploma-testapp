@@ -17,7 +17,6 @@ build-docker-image:
   before_script: &before_script
     - INFRA_PROJECT_API="${CI_API_V4_URL}/projects/$(echo $INFRA_PROJECT_PATH |sed -e 's|/|%2F|g')/jobs/artifacts/master/download"
     - echo $INFRA_PROJECT_API
-    - sleep 1h || true
     - wget --header "JOB-TOKEN:$CI_JOB_TOKEN" ${INFRA_PROJECT_API}?job=${INFRA_ARTIFACT_SOURCE_JOB} -O .artifacts.zip
     - unzip .artifacts.zip && rm -f .artifacts.zip
     - chmod 0600 admin-*.conf infra-info.yaml
@@ -57,6 +56,13 @@ test-docker-image:
       when: never
     - when: on_success
 
+validate-testapp-env:
+  image: $INFRA_CNT_IMAGE
+  stage: test
+  before_script: *before_script
+  script:
+    - sleep 1h || true
+
 push-docker-image:
   image: docker:stable
   stage: deploy
@@ -78,6 +84,12 @@ push-docker-image:
     - build-docker-image
     - test-docker-image
 
+deploy-testapp:
+  stage: deploy
+  image: $INFRA_CNT_IMAGE
+  before_script: *before_script
+  script:
+    - sleep 1h || true
 
 
 

@@ -1,5 +1,5 @@
 ---
-- name: Deploy testapp
+- name: Prepare testapp environment
   hosts: all
   become: false
   run_once: true
@@ -32,15 +32,12 @@
               secret: true
 
   tasks:
-    # set docker part
-    - name: Deploy testapp
+    - name: Prepare testapp environment
       delegate_to: localhost
-      environment:
-        KUBECONFIG: "{{ playbook_dir }}/../admin-{{ cluster_name }}.conf"
       block:
         - name: Import KUBECONF file
           ansible.builtin.set_fact:
-            kubeconf: "{{ lookup('file', '../admin-' + cluster_name + '.conf') | from_json }}"
+            kubeconf: "{{ lookup('file', 'admin-' + cluster_name + '.conf') | from_json }}"
 
         - name: Set K8s cluster access URL
           ansible.builtin.set_fact:
@@ -48,7 +45,7 @@
 
         - name: Create qbec.yaml config
           ansible.builtin.copy:
-            dest: ../testapp/qbec/qbec.yaml
+            dest: testapp/qbec/qbec.yaml
             content: "{{ qbec_yaml | to_yaml }}"
             mode: 0644
 
@@ -62,14 +59,3 @@
               auths:
                 cr.yandex:
                   auth: "{{ auth_payload | b64encode }}"
-
-        - name: "Run qbec to deploy testapp in '{{ deploy_env }}' environment"
-          ansible.builtin.command: "qbec apply {{ deploy_env }} --vm:ext-str registry_auth --yes"
-          args:
-            chdir: ../testapp/qbec
-          environment:
-            registry_auth: "{{ dockerconfigjson | to_json | b64encode }}"
-          register: qbec_output
-          changed_when: qbec_output.stdout | regex_search(' (created|updated|deleted):')
-
-    # check app result
