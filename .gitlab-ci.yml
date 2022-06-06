@@ -64,7 +64,7 @@ validate-testapp-env:
   before_script: *before_script
   script:
     - sudo bash -c "echo '$(dig +short kube-cluster.yc.complife.ru @8.8.8.8)  kube-cluster.yc.complife.ru' >> /etc/hosts"
-    - ansible-playbook -e @infra-info.yaml prepare.yaml validate.yaml
+    - ansible-playbook -e @infra-info.yaml -e build_ref=${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA} prepare.yaml validate.yaml
 
 push-docker-image:
   image: docker:stable
@@ -94,7 +94,7 @@ deploy-testapp:
   before_script: *before_script
   script:
     - sudo bash -c "echo '$(dig +short kube-cluster.yc.complife.ru @8.8.8.8)    kube-cluster.yc.complife.ru' >> /etc/hosts"
-    - ansible-playbook -e @infra-info.yaml prepare.yaml deploy.yaml
+    - ansible-playbook -e @infra-info.yaml -e build_ref=${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA} prepare.yaml deploy.yaml
 
 
 #  rules:

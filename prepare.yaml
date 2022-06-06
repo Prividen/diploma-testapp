@@ -26,11 +26,13 @@
             - name: registry
               default: "{{ container_registry }}"
             - name: image_tag
-              default: latest
+              default: "{{ image_tags_map[deploy_env] }}"
+            - name: build_ref
+              default: "{{ build_ref | default('unknown') }}"
             - name: pic_url
               default: "{{ picture_url }}"
             - name: registry_auth
-              # fake auth data (base64-encoded)
+              # fake auth data (base64-encoded minimal valid JSON). Real data will be provided via environment
               default: eyJhdXRocyI6IG51bGx9
               secret: true
 

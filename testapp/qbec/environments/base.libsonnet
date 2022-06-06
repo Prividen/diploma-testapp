@@ -10,8 +10,8 @@ local image_tag = std.extVar('image_tag');
         template: |||
           <html><body>
           <h1>Meditating cat</h1>
-          <p>__BANNER__</p>
-          <img src="__PICTURE__" height="85%"/>
+          <p>%(BANNER)s (image tag: <pre>%(IMAGE_TAG)s</pre>, build ref: <pre>%(BUILD_REF)s</pre>)</p>
+          <img src="%(PICTURE)s" height="85%%"/>
           </body></html>
         |||,
       },
