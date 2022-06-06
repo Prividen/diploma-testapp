@@ -1,6 +1,6 @@
 variables:
   INFRA_PROJECT_PATH: mak/diploma
-  INFRA_ARTIFACT_SOURCE_JOB: cluster-deploy
+  INFRA_ARTIFACT_SOURCE_JOB: save-artifacts
   INFRA_CNT_IMAGE: "${CI_REGISTRY}/${INFRA_PROJECT_PATH}/infra-container"
   APP_NAME: testapp
 
@@ -61,9 +61,7 @@ test-docker-image:
 validate-testapp-env:
   image: $INFRA_CNT_IMAGE
   stage: test
-#  before_script: *before_script
-  before_script:
-    - sleep 1h || true
+  before_script: *before_script
   script:
     - sudo bash -c "echo '$(dig +short kube-cluster.yc.complife.ru @8.8.8.8)  kube-cluster.yc.complife.ru' >> /etc/hosts"
     - ansible-playbook -e @infra-info.yaml prepare.yaml validate.yaml
