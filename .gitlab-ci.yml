@@ -61,9 +61,10 @@ test-docker-image:
 validate-testapp-env:
   image: $INFRA_CNT_IMAGE
   stage: test
-  before_script: *before_script
-  script:
+#  before_script: *before_script
+  before_script:
     - sleep 1h || true
+  script:
     - sudo bash -c "echo '$(dig +short kube-cluster.yc.complife.ru @8.8.8.8)  kube-cluster.yc.complife.ru' >> /etc/hosts"
     - ansible-playbook -e @infra-info.yaml prepare.yaml validate.yaml
 
