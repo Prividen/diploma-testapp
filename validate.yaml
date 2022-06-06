@@ -1,15 +1,16 @@
 ---
 - name: Validate testapp environment
-  hosts: all
+  hosts: localhost
   become: false
   run_once: true
   tasks:
     - name: "Run qbec to validate testapp in '{{ deploy_env }}' environment"
       delegate_to: localhost
-      ansible.builtin.command: "qbec validate {{ deploy_env }} --vm:ext-str registry_auth --yes"
+      ansible.builtin.command: "qbec validate {{ deploy_env }} --vm:ext-str registry_auth --vm:ext-str image_tag --yes"
       args:
         chdir: testapp/qbec
       environment:
+        image_tag: "{{ image_tags_map[deploy_env] }}"
         registry_auth: "{{ dockerconfigjson | to_json | b64encode }}"
         KUBECONFIG: "{{ playbook_dir }}/admin-{{ cluster_name }}.conf"
       changed_when: false

@@ -1,6 +1,6 @@
 ---
 - name: Deploy testapp
-  hosts: all
+  hosts: localhost
   become: false
   run_once: true
   tasks:

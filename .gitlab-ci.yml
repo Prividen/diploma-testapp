@@ -61,7 +61,8 @@ validate-testapp-env:
   stage: test
   before_script: *before_script
   script:
-    - sleep 1h || true
+    - sudo bash -c "echo '51.250.64.214        kube-cluster.yc.complife.ru' >> /etc/hosts"
+    - ansible-playbook -e @infra-info.yaml prepare.yaml validate.yaml
 
 push-docker-image:
   image: docker:stable
@@ -89,8 +90,8 @@ deploy-testapp:
   image: $INFRA_CNT_IMAGE
   before_script: *before_script
   script:
-    - sleep 1h || true
-
+    - sudo bash -c "echo '51.250.64.214        kube-cluster.yc.complife.ru' >> /etc/hosts"
+    - ansible-playbook -e @infra-info.yaml prepare.yaml validate.yaml
 
 
 

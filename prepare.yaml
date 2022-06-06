@@ -1,10 +1,13 @@
 ---
 - name: Prepare testapp environment
-  hosts: all
+  hosts: localhost
   become: false
   run_once: true
 
   vars:
+    image_tags_map:
+      stage: latest
+      prod: stable
     qbec_yaml:
       apiVersion: qbec.io/v1alpha1
       kind: App
@@ -59,3 +62,7 @@
               auths:
                 cr.yandex:
                   auth: "{{ auth_payload | b64encode }}"
+
+        - name: debug
+          debug:
+            var: image_tags_map[deploy_env]
