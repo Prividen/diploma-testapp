@@ -73,7 +73,6 @@ push-docker-image:
     - docker:dind
   before_script: *before_script
   script:
-    - when: never
     - echo "$DOCKER_REGISTRY_KEY" |docker login -u json_key --password-stdin cr.yandex
     - docker push ${CONTAINER_REGISTRY}/${APP_NAME}:latest
     - |
@@ -87,6 +86,9 @@ push-docker-image:
   dependencies:
     - build-docker-image
     - test-docker-image
+  rules:
+    - when: never
+
 
 deploy-testapp:
   stage: deploy
