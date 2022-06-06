@@ -35,6 +35,7 @@ build-docker-image:
   rules:
     - if: $CI_PIPELINE_SOURCE == 'pipeline'
       when: never
+    - when: on_success
 
 test-docker-image:
   image: docker:stable
@@ -62,7 +63,6 @@ push-docker-image:
     - docker:dind
   before_script: *before_script
   script:
-    - echo $CI_PIPELINE_SOURCE
     - echo "$DOCKER_REGISTRY_KEY" |docker login -u json_key --password-stdin cr.yandex
     - docker push ${CONTAINER_REGISTRY}/${APP_NAME}:latest
     - |
