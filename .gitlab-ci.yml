@@ -1,5 +1,5 @@
 variables:
-  INFRA_PROJECT_PATH: mak/diploma
+  INFRA_PROJECT_PATH: netology-diploma/infra
   INFRA_ARTIFACT_SOURCE_JOB: save-artifacts
   INFRA_CNT_IMAGE: "${CI_REGISTRY}/${INFRA_PROJECT_PATH}/infra-container"
   APP_NAME: testapp
