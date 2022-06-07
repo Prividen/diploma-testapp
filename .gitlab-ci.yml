@@ -4,6 +4,7 @@ variables:
   INFRA_CNT_IMAGE: "${CI_REGISTRY}/${INFRA_PROJECT_PATH}/infra-container"
   APP_NAME: testapp
   NO_DEPLOY: 0
+  DEBUG: 1
   #USE_DEPLOY_ENV: prod
 
 stages:
