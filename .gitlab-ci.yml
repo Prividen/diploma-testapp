@@ -39,7 +39,7 @@ build-docker-image:
         git checkout $last_tag
         export CI_COMMIT_TAG=$last_tag
       fi
-    script:
+  script:
     - cd ${APP_NAME}/docker
     - docker build --pull -t ${CONTAINER_REGISTRY}/${APP_NAME}:latest ./
     - |
