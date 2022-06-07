@@ -70,7 +70,6 @@ validate-testapp-env:
   stage: test
   before_script: *before_script
   script:
-    - sudo bash -c "echo '$(dig +short kube-cluster.yc.complife.ru @8.8.8.8)  kube-cluster.yc.complife.ru' >> /etc/hosts"
     - ansible-playbook -e @infra-info.yaml -e build_ref=${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA} -e deploy_env=$DEPLOY_ENV prepare.yaml validate.yaml
 
 push-docker-image:
@@ -102,7 +101,6 @@ deploy-testapp:
   script:
     - err_ex() { retcode=$?; echo "error-> $*" >&2; [ "$DEBUG" = "1" ] && (echo "wait for debug";sleep 1h||true); exit $retcode; }
     - trap "err_ex" ERR
-    - sudo bash -c "echo '$(dig +short kube-cluster.yc.complife.ru @8.8.8.8)    kube-cluster.yc.complife.ru' >> /etc/hosts"
     - ansible-playbook -e @infra-info.yaml -e build_ref=${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA} -e deploy_env=$DEPLOY_ENV prepare.yaml deploy.yaml
   rules:
     - if: $CI_COMMIT_TAG
