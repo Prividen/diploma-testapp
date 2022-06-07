@@ -68,3 +68,33 @@
         - name: Set image tags map
           ansible.builtin.set_fact:
             image_tags_map: "{{ image_tags_map }}"
+      tags:
+        - prepare
+        - validate
+        - deploy
+
+
+    - name: "Run qbec to validate testapp in '{{ deploy_env }}' environment"
+      delegate_to: localhost
+      ansible.builtin.command: "qbec validate {{ deploy_env }} --app-tag={{ build_ref }} --vm:ext-str registry_auth --yes"
+      args:
+        chdir: testapp/qbec
+      environment:
+        registry_auth: "{{ dockerconfigjson | to_json | b64encode }}"
+        KUBECONFIG: "{{ playbook_dir }}/admin-{{ cluster_name }}.conf"
+      changed_when: false
+      tags:
+        - validate
+
+    - name: "Run qbec to deploy testapp in '{{ deploy_env }}' environment"
+      delegate_to: localhost
+      ansible.builtin.command: "qbec apply {{ deploy_env }} --app-tag={{ build_ref }} --vm:ext-str registry_auth --yes"
+      args:
+        chdir: testapp/qbec
+      environment:
+        registry_auth: "{{ dockerconfigjson | to_json | b64encode }}"
+        KUBECONFIG: "{{ playbook_dir }}/admin-{{ cluster_name }}.conf"
+      register: qbec_output
+      changed_when: qbec_output.stdout | regex_search(' (created|updated|deleted):')
+      tags:
+        - deploy

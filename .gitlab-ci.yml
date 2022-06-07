@@ -69,7 +69,8 @@ validate-testapp-env:
   stage: test
   before_script: *before_script
   script:
-    - ansible-playbook -e @infra-info.yaml -e build_ref=${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA} -e deploy_env=$DEPLOY_ENV prepare.yaml validate.yaml
+    - BUILD_REF=${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
+    - ansible-playbook -e @infra-info.yaml -e build_ref=$BUILD_REF -e deploy_env=$DEPLOY_ENV -t validate testapp.yaml
   needs: []
 
 push-docker-image:
@@ -103,7 +104,8 @@ deploy-testapp:
   script:
     - err_ex() { retcode=$?; echo "error-> $*" >&2; [ "$DEBUG" = "1" ] && (echo "wait for debug";sleep 1h||true); exit $retcode; }
     - trap "err_ex" ERR
-    - ansible-playbook -e @infra-info.yaml -e build_ref=${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA} -e deploy_env=$DEPLOY_ENV prepare.yaml deploy.yaml
+    - BUILD_REF=${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
+    - ansible-playbook -e @infra-info.yaml -e build_ref=$BUILD_REF -e deploy_env=$DEPLOY_ENV -t deploy testapp.yaml
   rules:
     - if: $CI_COMMIT_TAG
     - if: $CI_PIPELINE_SOURCE == "pipeline" || $CI_PIPELINE_SOURCE == "web"
