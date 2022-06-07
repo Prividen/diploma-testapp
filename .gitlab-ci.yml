@@ -18,7 +18,7 @@ build-docker-image:
   services:
     - docker:dind
   before_script: &before_script
-    - echo "Invoked with: CI_PIPELINE_SOURCE: $CI_PIPELINE_SOURCE, CI_COMMIT_TAG: $CI_COMMIT_TAG"
+    - echo "Invoked with=> CI_PIPELINE_SOURCE-> $CI_PIPELINE_SOURCE, CI_COMMIT_TAG-> $CI_COMMIT_TAG"
     - INFRA_PROJECT_API="${CI_API_V4_URL}/projects/$(echo $INFRA_PROJECT_PATH |sed -e 's|/|%2F|g')/jobs/artifacts/master/download"
     - wget --header "JOB-TOKEN:$CI_JOB_TOKEN" ${INFRA_PROJECT_API}?job=${INFRA_ARTIFACT_SOURCE_JOB} -O .artifacts.zip
     - unzip .artifacts.zip && rm -f .artifacts.zip
@@ -40,7 +40,7 @@ build-docker-image:
         git checkout $last_tag
         export CI_COMMIT_TAG=$last_tag
       fi
-    - echo "Invoked with: DEPLOY_ENV_INHERITED: $DEPLOY_ENV_INHERITED, DEPLOY_ENV: $DEPLOY_ENV, CI_COMMIT_TAG: $CI_COMMIT_TAG"
+    - echo "Invoked with=> DEPLOY_ENV_INHERITED-> $DEPLOY_ENV_INHERITED, DEPLOY_ENV-> $DEPLOY_ENV, CI_COMMIT_TAG-> $CI_COMMIT_TAG"
   script:
     - cd ${APP_NAME}/docker
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
@@ -91,11 +91,9 @@ push-docker-image:
         docker tag ${CI_REGISTRY_IMAGE}:latest ${CONTAINER_REGISTRY}/${APP_NAME}:${TAG}
         docker push ${CONTAINER_REGISTRY}/${APP_NAME}:${TAG}
       done
-  dependencies:
-    - build-docker-image
-    - test-docker-image
   needs:
     - build-docker-image
+    - test-docker-image
 
 
 deploy-testapp:
