@@ -12,7 +12,7 @@ stages:
   - deploy
 
 build-docker-image:
-  image: docker:stable
+  image: docker:git
   stage: build
   services:
     - docker:dind
@@ -50,7 +50,7 @@ build-docker-image:
       fi
 
 test-docker-image:
-  image: docker:stable
+  image: docker:git
   stage: test
   services:
     - docker:dind
@@ -73,7 +73,7 @@ validate-testapp-env:
     - ansible-playbook -e @infra-info.yaml -e build_ref=${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA} -e deploy_env=$DEPLOY_ENV prepare.yaml validate.yaml
 
 push-docker-image:
-  image: docker:stable
+  image: docker:git
   stage: deploy
   services:
     - docker:dind
