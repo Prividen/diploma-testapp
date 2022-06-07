@@ -18,8 +18,8 @@ build-docker-image:
   services:
     - docker:dind
   before_script: &before_script
+    - echo "Invoked with: CI_PIPELINE_SOURCE: $CI_PIPELINE_SOURCE, CI_COMMIT_TAG: $CI_COMMIT_TAG"
     - INFRA_PROJECT_API="${CI_API_V4_URL}/projects/$(echo $INFRA_PROJECT_PATH |sed -e 's|/|%2F|g')/jobs/artifacts/master/download"
-    - echo $INFRA_PROJECT_API
     - wget --header "JOB-TOKEN:$CI_JOB_TOKEN" ${INFRA_PROJECT_API}?job=${INFRA_ARTIFACT_SOURCE_JOB} -O .artifacts.zip
     - unzip .artifacts.zip && rm -f .artifacts.zip
     - chmod 0600 admin-*.conf infra-info.yaml
@@ -40,11 +40,13 @@ build-docker-image:
         git checkout $last_tag
         export CI_COMMIT_TAG=$last_tag
       fi
+    - echo "Invoked with: DEPLOY_ENV_INHERITED: $DEPLOY_ENV_INHERITED, DEPLOY_ENV: $DEPLOY_ENV, CI_COMMIT_TAG: $CI_COMMIT_TAG"
   script:
     - cd ${APP_NAME}/docker
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
     - docker build --pull -t ${CI_REGISTRY_IMAGE}:latest ./
     - docker push ${CI_REGISTRY_IMAGE}:latest
+  needs: []
 
 test-docker-image:
   image: docker:git
@@ -59,7 +61,7 @@ test-docker-image:
     - wget -q docker:18080 -O - |grep 'Default index'
   after_script:
     - docker kill test_build
-  dependencies:
+  needs:
     - build-docker-image
 
 validate-testapp-env:
@@ -68,6 +70,7 @@ validate-testapp-env:
   before_script: *before_script
   script:
     - ansible-playbook -e @infra-info.yaml -e build_ref=${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA} -e deploy_env=$DEPLOY_ENV prepare.yaml validate.yaml
+  needs: []
 
 push-docker-image:
   image: docker:git
@@ -78,18 +81,21 @@ push-docker-image:
   script:
     - echo "$DOCKER_REGISTRY_KEY" |docker login -u json_key --password-stdin cr.yandex
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - docker pull ${CI_REGISTRY_IMAGE}:latest
     - UPLOAD_TAGS=latest
     - if [ -n "$CI_COMMIT_TAG" ]; then UPLOAD_TAGS="${COPY_TAGS} ${CI_COMMIT_TAG} stable"; fi
+    - echo "Will upload docker image for tags ${UPLOAD_TAGS}"
     - |
       for TAG in ${UPLOAD_TAGS} stable; do
         echo "Upload image for tag: $TAG"
-        docker pull ${CI_REGISTRY_IMAGE}:${TAG}
-        docker tag ${CI_REGISTRY_IMAGE}:${TAG} ${CONTAINER_REGISTRY}/${APP_NAME}:${TAG}
+        docker tag ${CI_REGISTRY_IMAGE}:latest ${CONTAINER_REGISTRY}/${APP_NAME}:${TAG}
         docker push ${CONTAINER_REGISTRY}/${APP_NAME}:${TAG}
       done
   dependencies:
     - build-docker-image
     - test-docker-image
+  needs:
+    - build-docker-image
 
 
 deploy-testapp:
@@ -106,3 +112,7 @@ deploy-testapp:
     - if: $NO_DEPLOY == "1"
       when: never
     - when: never
+  needs:
+    - push-docker-image
+    - validate-testapp-env
+
