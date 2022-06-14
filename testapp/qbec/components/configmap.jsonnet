@@ -11,11 +11,12 @@ local build_ref = std.extVar('build_ref');
     name: params.appname + '-staff',
   },
   data: {
+    // Substitute values into index.html template
     'index.html': params.start_page.template % {
-        BANNER: params.start_page.banner,
-        PICTURE: pic_url,
-        IMAGE_TAG: image_tag,
-        BUILD_REF: build_ref,
-    }
+      BANNER: params.start_page.banner,
+      PICTURE: pic_url,
+      IMAGE_TAG: image_tag,
+      BUILD_REF: build_ref,
+    },
   },
 }

@@ -6,6 +6,7 @@ local image_tag = std.extVar('image_tag');
     testapp: {
       appname: 'testapp',
       image: registry + '/testapp:' + image_tag,
+      // Template of index.html
       start_page: {
         template: |||
           <html><body>
