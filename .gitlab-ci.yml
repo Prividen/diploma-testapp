@@ -17,30 +17,8 @@ build-docker-image:
   stage: build
   services:
     - docker:dind
-  before_script: &before_script
-    - echo "Invoked with=> CI_PIPELINE_SOURCE-> $CI_PIPELINE_SOURCE, CI_COMMIT_TAG-> $CI_COMMIT_TAG"
-    - INFRA_PROJECT_API="${CI_API_V4_URL}/projects/$(echo $INFRA_PROJECT_PATH |sed -e 's|/|%2F|g')/jobs/artifacts/master/download"
-    - wget --header "JOB-TOKEN:$CI_JOB_TOKEN" ${INFRA_PROJECT_API}?job=${INFRA_ARTIFACT_SOURCE_JOB} -O .artifacts.zip
-    - unzip .artifacts.zip && rm -f .artifacts.zip
-    - chmod 0600 admin-*.conf infra-info.yaml
-    - export CONTAINER_REGISTRY=$(grep '^container_registry:' infra-info.yaml |cut -f2 -d' ')
-    - export DOCKER_REGISTRY_KEY=$(grep '^docker_registry_agent_key:' infra-info.yaml |cut -f2 -d' ' |base64 -d)
-    - export DEPLOY_ENV_INHERITED=$(grep '^deploy_env:' infra-info.yaml |cut -f2 -d' ')
-      # by default, DEPLOY_ENV is 'stage'
-    - export DEPLOY_ENV=stage
-      # if deployment called from infra project, will use inherited cluster value
-    - if [ "$CI_PIPELINE_SOURCE" = "pipeline" ]; then export DEPLOY_ENV=$DEPLOY_ENV_INHERITED; fi
-      # if it tag release, then DEPLOY_ENV is 'prod'
-    - if [ -n "$CI_COMMIT_TAG" ]; then export DEPLOY_ENV=prod; fi
-      # but we always can reassign this behaviour with USE_DEPLOY_ENV CI env
-    - if [ -n "$USE_DEPLOY_ENV" ]; then export DEPLOY_ENV=$USE_DEPLOY_ENV; fi
-    - |
-      if [ "$DEPLOY_ENV" = "prod" -a -z "$CI_COMMIT_TAG" ]; then
-        last_tag=$(git tag -l --sort="version:refname" |tail -1)
-        git checkout $last_tag
-        export CI_COMMIT_TAG=$last_tag
-      fi
-    - echo "Invoked with=> DEPLOY_ENV_INHERITED-> $DEPLOY_ENV_INHERITED, DEPLOY_ENV-> $DEPLOY_ENV, CI_COMMIT_TAG-> $CI_COMMIT_TAG"
+  before_script:
+    - . ./prepare_build_env.sh
   script:
     - cd ${APP_NAME}/docker
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
@@ -53,7 +31,8 @@ test-docker-image:
   stage: test
   services:
     - docker:dind
-  before_script: *before_script
+  before_script:
+    - . ./prepare_build_env.sh
   script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
     - docker run --name test_build --rm -d -p 18080:80 ${CI_REGISTRY_IMAGE}:latest
@@ -67,7 +46,8 @@ test-docker-image:
 validate-testapp-env:
   image: $INFRA_CNT_IMAGE
   stage: test
-  before_script: *before_script
+  before_script:
+    - . ./prepare_build_env.sh
   script:
     - BUILD_REF=${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
     - ansible-playbook -e @infra-info.yaml -e build_ref=$BUILD_REF -e deploy_env=$DEPLOY_ENV -t validate testapp.yaml
@@ -78,7 +58,8 @@ push-docker-image:
   stage: deploy
   services:
     - docker:dind
-  before_script: *before_script
+  before_script:
+    - . ./prepare_build_env.sh
   script:
     - echo "$DOCKER_REGISTRY_KEY" |docker login -u json_key --password-stdin cr.yandex
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
@@ -100,7 +81,8 @@ push-docker-image:
 deploy-testapp:
   stage: deploy
   image: $INFRA_CNT_IMAGE
-  before_script: *before_script
+  before_script:
+    - . ./prepare_build_env.sh
   script:
     - err_ex() { retcode=$?; echo "error-> $*" >&2; [ "$DEBUG" = "1" ] && (echo "wait for debug";sleep 1h||true); exit $retcode; }
     - trap "err_ex" ERR
@@ -115,4 +97,3 @@ deploy-testapp:
   needs:
     - push-docker-image
     - validate-testapp-env
-
