@@ -21,6 +21,7 @@ build-docker-image:
     - . ./prepare_build_env.sh
   script:
     - cd ${APP_NAME}/docker
+      # Build testapp docker image as :latest and push it into the local CI registry
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
     - docker build --pull -t ${CI_REGISTRY_IMAGE}:latest ./
     - docker push ${CI_REGISTRY_IMAGE}:latest
@@ -34,6 +35,7 @@ test-docker-image:
   before_script:
     - . ./prepare_build_env.sh
   script:
+      # test testapp docker image. Run it and check index.html for magic phrase
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
     - docker run --name test_build --rm -d -p 18080:80 ${CI_REGISTRY_IMAGE}:latest
     - sleep 5s
@@ -49,6 +51,7 @@ validate-testapp-env:
   before_script:
     - . ./prepare_build_env.sh
   script:
+      # Prepare qbec environment and run `qbec validate`
     - BUILD_REF=${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
     - ansible-playbook -e @infra-info.yaml -e build_ref=$BUILD_REF -e deploy_env=$DEPLOY_ENV -t validate testapp.yaml
   needs: []
@@ -61,12 +64,16 @@ push-docker-image:
   before_script:
     - . ./prepare_build_env.sh
   script:
+      # login into local CI and Yandex cloud registries
     - echo "$DOCKER_REGISTRY_KEY" |docker login -u json_key --password-stdin cr.yandex
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+      # pull the :latest image (which was build in build-docker-image job)
     - docker pull ${CI_REGISTRY_IMAGE}:latest
     - UPLOAD_TAGS=latest
+      # If we have commit tag, then assign to image additional tags - git tag name and :stable
     - if [ -n "$CI_COMMIT_TAG" ]; then UPLOAD_TAGS="${UPLOAD_TAGS} ${CI_COMMIT_TAG} stable"; fi
     - echo "Will upload docker image for tags ${UPLOAD_TAGS}"
+      # Push docker image into yandex registry (with all assigned tags)
     - |
       for TAG in ${UPLOAD_TAGS}; do
         echo "Upload image for tag: $TAG"
@@ -84,11 +91,17 @@ deploy-testapp:
   before_script:
     - . ./prepare_build_env.sh
   script:
+      # debug staff, will sleep 1 hour on error if DEBUG=1
     - err_ex() { retcode=$?; echo "error-> $*" >&2; [ "$DEBUG" = "1" ] && (echo "wait for debug";sleep 1h||true); exit $retcode; }
     - trap "err_ex" ERR
+      # Prepare qbec environment and run `qbec apply`
     - BUILD_REF=${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
     - ansible-playbook -e @infra-info.yaml -e build_ref=$BUILD_REF -e deploy_env=$DEPLOY_ENV -t deploy testapp.yaml
   rules:
+      # Run this job in three cases:
+      # 1) if we have git commit tag;
+      # 2) if pipeline triggered from parent project (initial testapp deployment in a fresh cluster)
+      # 3) manually run from gitlab web interface
     - if: $CI_COMMIT_TAG
     - if: $CI_PIPELINE_SOURCE == "pipeline" || $CI_PIPELINE_SOURCE == "web"
     - if: $NO_DEPLOY == "1"
