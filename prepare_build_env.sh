@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -euo pipefail
+set -eo pipefail
 
 echo "Invoked with=> CI_PIPELINE_SOURCE-> $CI_PIPELINE_SOURCE, CI_COMMIT_TAG-> $CI_COMMIT_TAG"
 
